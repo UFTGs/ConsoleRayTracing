@@ -20,7 +20,7 @@ CHAR_INFO* buffer = new CHAR_INFO[SW * SH];
 
 // Characters sorted by brightness intensity
 //char gradient[] = " .:!/r(l1Z4H9W8$@";
-char gradient[] = "@$8W9H4Z1l(r/!:. ";
+wchar_t gradient[] = L"\u25b2\u25b1@$8W9H4Z1l(r/!:. ";
 
 // Global frame counter, some kind of timer
 long t = 0;
@@ -78,7 +78,8 @@ void FillScreen(char c)
     for (int i = 0; i < SW * SH; i++)
     {
         CHAR_INFO charInfo;
-        charInfo.Char.AsciiChar = c;
+        charInfo.Char.UnicodeChar = c;
+        //charInfo.Char.UnicodeChar = 0x25b0;//0x25cf;
         charInfo.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
         buffer[i] = charInfo;
     }
@@ -120,7 +121,7 @@ CHAR_INFO TraceRay(Vector3 ro, Vector3 rd, int lvl)
     float li = RISphere(ro, rd, light, 0.2);
     if ((li > 0 && li < inters) || (li > 0 && inters < 0))
     {
-        charInfo.Char.AsciiChar = gradient[16];
+        charInfo.Char.UnicodeChar = gradient[18];
         charInfo.Attributes = BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED;
         return charInfo;
     }
@@ -136,15 +137,15 @@ CHAR_INFO TraceRay(Vector3 ro, Vector3 rd, int lvl)
         float diff = fmaxf(0, n * (light - itPoint).Norm());
 
         // Color by Phong model
-        char color = 16 * (0.0 + diff);
+        char color = 18 * (0.0 + diff);
 
         // Select character from intensity gradient
-        charInfo.Char.AsciiChar = gradient[clamp(color, 0, 16)];
+        charInfo.Char.UnicodeChar = gradient[clamp(color, 0, 18)];
 
         if (lvl < 4) // If ray has less 4 reflects call recursy
         {
             CHAR_INFO ci = TraceRay(itPoint, (rd - n * 2 * (n * rd)).Norm(), lvl + 1);
-            if (ci.Char.AsciiChar != '\0')
+            if (ci.Char.UnicodeChar != '\0')
             {
                 // If recursive call return intersect, changes the color of the surface by a reflected object color
                 charInfo.Attributes = ci.Attributes | (intersObj.color);
@@ -154,13 +155,13 @@ CHAR_INFO TraceRay(Vector3 ro, Vector3 rd, int lvl)
 
         // No reflectionm, set own color
         charInfo.Attributes = intersObj.color;
-        if (clamp(color, 0, 16) > 6)
+        if (clamp(color, 0, 18) > 6)
             charInfo.Attributes |= BACKGROUND_INTENSITY;
         return charInfo;
     }
 
     // No intersections
-    charInfo.Char.AsciiChar = '\0';
+    charInfo.Char.UnicodeChar = '\0';
     return charInfo;
 }
 
@@ -174,7 +175,7 @@ void UpdateObjects()
     {
         it->p = Vector3(cos(t / 30.0 + it->ph) * 2.2, sin(t / 25.0 + it->ph) * 2, -1 + sin(t / 50.0 + it->ph) * 2);
     }
-    light = Vector3(sin(t / 10.0) * 1, sin(t/33.0+6)*1, -cos(t / 15.0) * 1);
+    light = Vector3(sin(t / 10.0) * 1, sin(t/33.0+6)*1+1, -cos(t / 15.0) * 1);
 }
 
 /// <summary>
@@ -206,7 +207,7 @@ void ScreenRayTracing()
 
             // Do trace ray
             CHAR_INFO ci = TraceRay(ro, rd, 0);
-            if (ci.Char.AsciiChar != '\0')
+            if (ci.Char.UnicodeChar != '\0')
             {
                 // If the ray has intersected an object sets "pixel" by intersection result
                 buffer[j * SW + i] = ci;
@@ -217,7 +218,6 @@ void ScreenRayTracing()
 
 int main()
 {
-    //setlocale(LC_ALL, "Russian");
     // Getting console handler for fast buffer swapping
     consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     consBufSize.X = SW;
