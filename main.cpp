@@ -19,7 +19,8 @@ double aspect = screenAspect * pixelAspect;
 CHAR_INFO* buffer = new CHAR_INFO[SW * SH];
 
 // Characters sorted by brightness intensity
-char gradient[] = " .:!/r(l1Z4H9W8$@";
+//char gradient[] = " .:!/r(l1Z4H9W8$@";
+char gradient[] = "@$8W9H4Z1l(r/!:. ";
 
 // Global frame counter, some kind of timer
 long t = 0;
@@ -74,7 +75,7 @@ void FlushBuffer()
 /// <param name="c">Character to fill</param>
 void FillScreen(char c)
 {
-    for (int i = 0; i < SW*SH; i++)
+    for (int i = 0; i < SW * SH; i++)
     {
         CHAR_INFO charInfo;
         charInfo.Char.AsciiChar = c;
@@ -115,6 +116,15 @@ CHAR_INFO TraceRay(Vector3 ro, Vector3 rd, int lvl)
 
     CHAR_INFO charInfo;
 
+    // Checks intersection with the light source bulb
+    float li = RISphere(ro, rd, light, 0.2);
+    if ((li > 0 && li < inters) || (li > 0 && inters < 0))
+    {
+        charInfo.Char.AsciiChar = gradient[16];
+        charInfo.Attributes = BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED;
+        return charInfo;
+    }
+
     if (inters > 0) // Ray has intersection
     {
         // Intersection point
@@ -126,7 +136,7 @@ CHAR_INFO TraceRay(Vector3 ro, Vector3 rd, int lvl)
         float diff = fmaxf(0, n * (light - itPoint).Norm());
 
         // Color by Phong model
-        char color = 16 * (0.1 + diff);
+        char color = 16 * (0.0 + diff);
 
         // Select character from intensity gradient
         charInfo.Char.AsciiChar = gradient[clamp(color, 0, 16)];
@@ -137,15 +147,18 @@ CHAR_INFO TraceRay(Vector3 ro, Vector3 rd, int lvl)
             if (ci.Char.AsciiChar != '\0')
             {
                 // If recursive call return intersect, changes the color of the surface by a reflected object color
-                charInfo.Attributes = ci.Attributes;
+                charInfo.Attributes = ci.Attributes | (intersObj.color);
                 return charInfo;
             }
         }
 
         // No reflectionm, set own color
         charInfo.Attributes = intersObj.color;
+        if (clamp(color, 0, 16) > 6)
+            charInfo.Attributes |= BACKGROUND_INTENSITY;
         return charInfo;
     }
+
     // No intersections
     charInfo.Char.AsciiChar = '\0';
     return charInfo;
@@ -161,7 +174,7 @@ void UpdateObjects()
     {
         it->p = Vector3(cos(t / 30.0 + it->ph) * 2.2, sin(t / 25.0 + it->ph) * 2, -1 + sin(t / 50.0 + it->ph) * 2);
     }
-    light = Vector3(sin(t / 10.0) * 2, 0, -cos(t / 10.0) * 2);
+    light = Vector3(sin(t / 10.0) * 1, sin(t/33.0+6)*1, -cos(t / 15.0) * 1);
 }
 
 /// <summary>
@@ -204,6 +217,7 @@ void ScreenRayTracing()
 
 int main()
 {
+    //setlocale(LC_ALL, "Russian");
     // Getting console handler for fast buffer swapping
     consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     consBufSize.X = SW;
@@ -216,9 +230,9 @@ int main()
     srctWriteRect.Right = SW - 1;
 
     // Adding some objects to scene
-    objects.push_back(SphereObj(0.8, Vector3(0), 0, FOREGROUND_RED));
-    objects.push_back(SphereObj(0.5, Vector3(0), 10, FOREGROUND_GREEN));
-    objects.push_back(SphereObj(1.5, Vector3(0), 20, FOREGROUND_BLUE));
+    objects.push_back(SphereObj(0.8, Vector3(0), 0, BACKGROUND_RED));
+    objects.push_back(SphereObj(0.5, Vector3(0), 10, BACKGROUND_GREEN));
+    objects.push_back(SphereObj(1.5, Vector3(0), 20, BACKGROUND_BLUE));
 
     while (true)
     {
